@@ -33,6 +33,31 @@ class FreshdeskController < ApplicationController
       end
       conversation = JSON.parse(response.body)
       conversations.push(conversation)
+			conversation.each do |conversation|
+				TicketConversation.create(
+					ticket_id: conversation["ticket_id"],
+					body_text: conversation["body_text"],
+					incoming: conversation["incoming"],
+					private: conversation["private"],
+					user_id: conversation["user_id"],
+					support_email: conversation["support_email"],
+					source_id: conversation["source_id"],
+					category_id: conversation["category_id"],
+					from_email: conversation["from_email"],
+					email_failure_count: conversation["email_failure_count"],
+					outgoing_failures: conversation["outgoing_failures"],
+					thread_id: conversation["thread_id"],
+					thread_message_id: conversation["thread_message_id"],
+					created_at: conversation["created_at"],
+					updated_at: conversation["updated_at"],
+					last_edited_at: conversation["last_edited_at"],
+					last_edited_user_id: conversation["last_edited_user_id"],
+					automation_id: conversation["automation_id"],
+					automation_type_id: conversation["automation_type_id"],
+					auto_response: conversation["auto_response"],
+      		source_additional_info: conversation["source_additional_info"]
+				)
+			end
     end
     render json: conversations
   end
