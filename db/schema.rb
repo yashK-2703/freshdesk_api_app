@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_04_18_114937) do
+ActiveRecord::Schema[7.0].define(version: 2023_04_18_181035) do
   create_table "ticket_conversations", force: :cascade do |t|
     t.integer "ticket_id"
     t.string "body_text"
@@ -68,6 +68,14 @@ ActiveRecord::Schema[7.0].define(version: 2023_04_18_114937) do
     t.boolean "nr_escalated"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.datetime "agent_responded_at"
+    t.datetime "requester_responded_at"
+    t.datetime "first_responded_at"
+    t.datetime "status_updated_at"
+    t.datetime "reopened_at"
+    t.datetime "resolved_at"
+    t.datetime "closed_at"
+    t.datetime "pending_since"
   end
 
 end

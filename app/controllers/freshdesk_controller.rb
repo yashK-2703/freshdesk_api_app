@@ -6,13 +6,14 @@ class FreshdeskController < ApplicationController
   FRESHDESK_PASSWORD = 'x'
 
   def fetch_tickets(render_response = true)
-    uri = URI("#{FRESHDESK_DOMAIN}/api/v2/tickets")
+    uri = URI("#{FRESHDESK_DOMAIN}/api/v2/tickets?include=stats")
     request = Net::HTTP::Get.new(uri)
     request.basic_auth(FRESHDESK_API_KEY, FRESHDESK_PASSWORD)
     response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
     tickets = JSON.parse(response.body)
+		puts "tickets are",tickets;
     render json: tickets if render_response
     tickets.each do |ticket|
       tickets.each do |ticket|
@@ -45,13 +46,21 @@ class FreshdeskController < ApplicationController
             is_escalated: ticket['is_escalated'],
             custom_fields: ticket['custom_fields'],
             created_at: ticket['created_at'],
-            updated_at: ticket['updated_at'],
-            associated_tickets_count: ticket['associated_tickets_count'],
-            tags: ticket['tags'],
-            nr_due_by: ticket['nr_due_by']
-          )
-        else
-          Ticket.create!(
+						updated_at: ticket['updated_at'],
+						associated_tickets_count: ticket['associated_tickets_count'],
+						tags: ticket['tags'],
+						nr_due_by: ticket['nr_due_by'],
+						agent_responded_at: ticket['stats']['agent_responded_at'],
+						requester_responded_at: ticket['stats']['requester_responded_at'],
+						first_responded_at: ticket['stats']['first_responded_at'],
+						status_updated_at: ticket['stats']['status_updated_at'],
+						reopened_at: ticket['stats']['reopened_at'],
+						resolved_at: ticket['stats']['resolved_at'],
+						closed_at: ticket['stats']['closed_at'],
+						pending_since: ticket['stats']['pending_since']
+					)
+				else
+					Ticket.create!(
             cc_emails: ticket['cc_emails'],
             fwd_emails: ticket['fwd_emails'],
             reply_cc_emails: ticket['reply_cc_emails'],
@@ -80,24 +89,44 @@ class FreshdeskController < ApplicationController
             created_at: ticket['created_at'],
             updated_at: ticket['updated_at'],
             associated_tickets_count: ticket['associated_tickets_count'],
-            tags: ticket['tags'],
-            nr_due_by: ticket['nr_due_by']
-          )
-        end
-      end
-    end
-    tickets
-  end
+						tags: ticket['tags'],
+						nr_due_by: ticket['nr_due_by'],
+						agent_responded_at: ticket['stats']['agent_responded_at'],
+						requester_responded_at: ticket['stats']['requester_responded_at'],
+						first_responded_at: ticket['stats']['first_responded_at'],
+						status_updated_at: ticket['stats']['status_updated_at'],
+						reopened_at: ticket['stats']['reopened_at'],
+						resolved_at: ticket['stats']['resolved_at'],
+						closed_at: ticket['stats']['closed_at'],
+						pending_since: ticket['stats']['pending_since']
+					)
+				end
+			end
+		end
+		tickets
+	end
+
+	def fetch_ticket_by_id
+		ticket_id = params[:id]
+		ticket_conversation_uri = URI("#{FRESHDESK_DOMAIN}/api/v2/tickets/#{ticket_id}")
+		request = Net::HTTP::Get.new(ticket_conversation_uri)
+		request.basic_auth(FRESHDESK_API_KEY, FRESHDESK_PASSWORD)
+		response = Net::HTTP.start(ticket_conversation_uri.hostname, ticket_conversation_uri.port, use_ssl: true) do |http|
+			http.request(request)
+		end
+		ticket = JSON.parse(response.body)
+		render json: ticket
+	end
 
 	def fetch_conversation_by_ticket
 		ticket_id = params[:id]
 		ticket_conversation_uri = URI("#{FRESHDESK_DOMAIN}/api/v2/tickets/#{ticket_id}/conversations")
-      request = Net::HTTP::Get.new(ticket_conversation_uri)
-      request.basic_auth(FRESHDESK_API_KEY, FRESHDESK_PASSWORD)
-      response = Net::HTTP.start(ticket_conversation_uri.hostname, ticket_conversation_uri.port, use_ssl: true) do |http|
-        http.request(request)
-      end
-			conversation = JSON.parse(response.body)
+		request = Net::HTTP::Get.new(ticket_conversation_uri)
+		request.basic_auth(FRESHDESK_API_KEY, FRESHDESK_PASSWORD)
+		response = Net::HTTP.start(ticket_conversation_uri.hostname, ticket_conversation_uri.port, use_ssl: true) do |http|
+			http.request(request)
+		end
+		conversation = JSON.parse(response.body)
 			render json: conversation
 	end
 
@@ -143,4 +172,16 @@ class FreshdeskController < ApplicationController
     end
     render json: conversations
   end
+
+	def average_time
+		tickets = Ticket.where(status: [3, 4])
+		response_times = tickets.map { |ticket| ticket.first_responded_at - ticket.created_at }
+		@avg_response_time = response_times.sum / response_times.size.to_f
+
+		tickets = Ticket.where(status: [3, 4]).where.not(resolved_at: nil)
+		resolution_times = tickets.map { |ticket| ticket.resolved_at - ticket.created_at }
+		@avg_resolution_time = resolution_times.sum / resolution_times.size.to_f
+		render json: { avg_response_time: @avg_response_time, avg_resolution_time: @avg_resolution_time }
+	end
+
 end
