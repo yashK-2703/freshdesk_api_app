@@ -166,7 +166,11 @@ class FreshdeskController < ApplicationController
 					automation_id: conversation["automation_id"],
 					automation_type_id: conversation["automation_type_id"],
 					auto_response: conversation["auto_response"],
-      		source_additional_info: conversation["source_additional_info"]
+      		source_additional_info: conversation["source_additional_info"],
+					to_emails: conversation["to_emails"],
+					cc_emails: conversation["cc_emails"],
+					bcc_emails: conversation["bcc_emails"],
+					attachments: conversation["attachments"]
 				)
 			end
     end
@@ -174,15 +178,15 @@ class FreshdeskController < ApplicationController
   end
 
 	def average_time
-    tickets = Ticket.where.not(first_responded_at: nil)
-    response_times = tickets.map { |ticket| ticket.first_responded_at - ticket.created_at }
-    @avg_response_time = response_times.sum / response_times.size.to_f
-    @avg_response_time = "%02d:%02d:%02d" % [@avg_response_time / 3600, @avg_response_time / 60 % 60, @avg_response_time % 60]
-    tickets = Ticket.where(status: [4, 5]).where.not(resolved_at: nil)
-    resolution_times = tickets.map { |ticket| ticket.resolved_at - ticket.created_at }
-    @avg_resolution_time = resolution_times.sum / resolution_times.size.to_f
-    @avg_resolution_time = "%02d:%02d:%02d" % [@avg_resolution_time / 3600, @avg_resolution_time / 60 % 60, @avg_resolution_time % 60]
-    render json: { avg_response_time: @avg_response_time, avg_resolution_time: @avg_resolution_time }
-  end
+		tickets = Ticket.where.not(first_responded_at: nil)
+		response_times = tickets.map { |ticket| ticket.first_responded_at - ticket.created_at }
+		@avg_response_time = response_times.sum / response_times.size.to_f
+		@avg_response_time = "%02d:%02d:%02d" % [@avg_response_time / 3600, @avg_response_time / 60 % 60, @avg_response_time % 60]
+		tickets = Ticket.where(status: [4, 5]).where.not(resolved_at: nil)
+		resolution_times = tickets.map { |ticket| ticket.resolved_at - ticket.created_at }
+		@avg_resolution_time = resolution_times.sum / resolution_times.size.to_f
+		@avg_resolution_time = "%02d:%02d:%02d" % [@avg_resolution_time / 3600, @avg_resolution_time / 60 % 60, @avg_resolution_time % 60]
+		render json: { avg_response_time: @avg_response_time, avg_resolution_time: @avg_resolution_time }
+	end
 
 end
